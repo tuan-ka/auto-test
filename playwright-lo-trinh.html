@@ -123,7 +123,7 @@
 <body>
   <aside id="sidebar">
     <h1>🎭 Playwright cho Tester</h1>
-    <div class="sub">Lộ trình 2 tuần cấp tốc · 2026</div>
+    <div class="sub">Lộ trình 3 tuần · Cơ bản → Thực chiến · 2026</div>
     <div id="navList"></div>
   </aside>
 
@@ -448,6 +448,110 @@ L({day:'Ngày 13–14',title:'Capstone — Test End-to-End một luồng mua hà
    ex:'request cho phép gọi GET/POST... và kiểm tra status/JSON, chạy rất nhanh.'},
  ]},
 
+/* ===================== TUAN 3 - THUC CHIEN ===================== */
+L({day:'Ngày 15',title:'Strict mode & lọc locator (lỗi gặp ngày đầu)',nav:'Ngày 15 · Strict mode',group:'Tuần 3 — Thực chiến',
+ body:`
+ <p>Trên app thật, một locator thường khớp <b>nhiều element</b> (danh sách sản phẩm, dòng bảng...). Playwright báo lỗi:</p>
+ ${codeBlock("Error: strict mode violation: locator resolved to 6 elements")}
+ <p>Đây là lỗi bạn gặp <b>ngay ngày đầu</b> thực chiến. Cách xử lý: <b>thu hẹp locator cho còn đúng 1 element</b>.</p>
+ <h3>3 cách thu hẹp</h3>
+ ${codeBlock("// 1. Theo vi tri\nawait page.getByRole('button', { name: 'Add to cart' }).first();\nawait page.getByRole('button', { name: 'Add to cart' }).nth(0);\n\n// 2. Loc theo noi dung ben trong (.filter)\nconst dong = page.locator('.inventory_item').filter({ hasText: 'Backpack' });\n\n// 3. Chaining - tim element CON trong 1 cha cu the\nawait dong.getByRole('button').click();")}
+ <h3>Làm việc với danh sách / bảng</h3>
+ ${codeBlock("const ten = page.locator('.inventory_item_name');\nawait expect(ten).toHaveCount(6);          // dem so dong\nconst ds = await ten.allTextContents();    // lay text tat ca thanh mang")}
+ <div class="callout warn"><span class="t">⚠️ Quan trọng</span> Đừng vội thêm <code class="inl">.first()</code> bừa để "hết lỗi" — hãy chắc bạn đang chọn <b>đúng</b> element người dùng thao tác (vd đúng dòng sản phẩm), nếu không test sẽ pass sai.</div>`,
+ practice:`Mở <code class="inl">tests/day15-strict-mode-filter.spec.js</code>: dùng <code class="inl">.filter()</code> chọn đúng dòng Bike Light.`}),
+
+L({day:'Ngày 16',title:'Tái dùng đăng nhập (fixture & storageState)',nav:'Ngày 16 · Tái dùng login',group:'Tuần 3 — Thực chiến',
+ body:`
+ <p>App thật bắt đăng nhập ở mọi test → suite <b>rất chậm</b>. Có 2 cách tái dùng trạng thái đăng nhập.</p>
+ <h3>Cách A — Custom fixture (học trước, đơn giản)</h3>
+ <p>Tạo một "fixture" tên <code class="inl">loggedInPage</code> tự đăng nhập sẵn, test nào cần chỉ việc yêu cầu:</p>
+ ${codeBlock("export const test = base.extend({\n  loggedInPage: async ({ page }, use) => {\n    await page.goto('https://www.saucedemo.com');\n    await page.getByPlaceholder('Username').fill('standard_user');\n    await page.getByPlaceholder('Password').fill('secret_sauce');\n    await page.getByRole('button', { name: 'Login' }).click();\n    await use(page);   // giao trang DA login cho test\n  },\n});")}
+ ${codeBlock("test('vi du', async ({ loggedInPage }) => {\n  await expect(loggedInPage.getByText('Products')).toBeVisible();\n});")}
+ <h3>Cách B — storageState (nhanh nhất cho suite lớn)</h3>
+ <p>Đăng nhập <b>1 lần</b>, lưu cookie/localStorage ra file, rồi mọi test khởi động là đã đăng nhập sẵn:</p>
+ ${codeBlock("// trong file setup: dang nhap 1 lan roi luu\nawait page.context().storageState({ path: 'playwright/.auth/user.json' });\n\n// trong playwright.config.js:\nuse: { storageState: 'playwright/.auth/user.json' }")}
+ <div class="callout new"><span class="t">📌 Khi nào dùng gì</span> Mới học / vài chục test → <b>fixture</b>. Suite lớn, chạy CI → <b>storageState</b> (đăng nhập gần như tức thì). Tài liệu: playwright.dev/docs/auth</div>`,
+ practice:`Mở <code class="inl">fixtures/auth.fixture.js</code> và <code class="inl">tests/day16-tai-dung-dang-nhap.spec.js</code>.`}),
+
+L({day:'Ngày 17',title:'iframe, tab mới, upload/download, dialog',nav:'Ngày 17 · Frame/Tab/File',group:'Tuần 3 — Thực chiến',
+ body:`
+ <p>Các tình huống "khó" nhưng cực phổ biến ở app thật: thanh toán trong iframe, popup OTP, tải báo cáo, hộp thoại xác nhận.</p>
+ <h3>Dialog / Alert</h3>
+ ${codeBlock("// Dang ky TRUOC khi hanh dong lam bat alert\npage.on('dialog', async (dialog) => {\n  await dialog.accept();   // hoac dialog.dismiss()\n});\nawait page.getByRole('button', { name: 'Click for JS Alert' }).click();")}
+ <h3>iframe — phải "chui" vào trước</h3>
+ ${codeBlock("const khung = page.frameLocator('#mce_0_ifr');\nawait khung.locator('#tinymce').fill('Xin chao');")}
+ <h3>Tab / cửa sổ mới</h3>
+ ${codeBlock("const [tabMoi] = await Promise.all([\n  context.waitForEvent('page'),                 // doi tab moi\n  page.getByRole('link', { name: 'Click Here' }).click(),\n]);\nawait tabMoi.waitForLoadState();")}
+ <h3>Upload file</h3>
+ ${codeBlock("await page.locator('#file-upload').setInputFiles('duong/dan/file.png');")}`,
+ tip:`Mẫu chung cho "chờ sự kiện đi kèm hành động" là <code class="inl">Promise.all([ waitForEvent(...), action() ])</code> — dùng cho tab mới, download...`,
+ practice:`Mở <code class="inl">tests/day17-iframe-tab-file.spec.js</code> (dùng the-internet.herokuapp.com).`}),
+
+L({day:'Ngày 18',title:'Mock/chặn network + chờ dữ liệu động',nav:'Ngày 18 · Mock network',group:'Tuần 3 — Thực chiến',
+ body:`
+ <p>Để test giao diện khi API <b>lỗi / rỗng / nhiều dữ liệu</b> mà không phụ thuộc backend thật, ta "chặn" và tự quyết định response.</p>
+ <h3>Chặn bớt request cho nhanh (abort)</h3>
+ ${codeBlock("await page.route('**/*.{png,jpg,jpeg}', route => route.abort());")}
+ <h3>Trả response giả (fulfill) — test ca lỗi</h3>
+ ${codeBlock("await page.route('**/api/users/2', async (route) => {\n  await route.fulfill({\n    status: 200,\n    contentType: 'application/json',\n    body: JSON.stringify({ data: { id: 2, name: 'MOCK_USER' } }),\n  });\n});")}
+ <div class="callout tip"><span class="t">💡 Ý nghĩa với tester</span> Bạn chủ động dựng tình huống khó tái hiện (server 500, danh sách rỗng, timeout) để kiểm tra giao diện xử lý đúng chưa — điều mà test thủ công rất khó làm ổn định.</div>
+ <h3>Chờ dữ liệu động (thay sleep cứng)</h3>
+ ${codeBlock("await page.waitForLoadState('networkidle');           // doi mang ranh\n// hoac doi dung 1 API:\nawait page.waitForResponse(r => r.url().includes('/api/cart'));")}`,
+ practice:`Mở <code class="inl">tests/day18-network-mock.spec.js</code>: mock API trả lỗi 500 để test giao diện.`}),
+
+L({day:'Ngày 19',title:'Tổ chức test & cấu hình môi trường',nav:'Ngày 19 · Tổ chức & Config',group:'Tuần 3 — Thực chiến',
+ body:`
+ <p>Suite lớn cần <b>dễ đọc, dễ lọc, dễ báo cáo</b> và chạy được trên nhiều môi trường (dev/staging/prod).</p>
+ <h3>Nhóm & gắn nhãn test</h3>
+ ${codeBlock("test.describe('Luong dang nhap', () => {\n  test('dang nhap thanh cong @smoke', async ({ page }) => {\n    await test.step('Nhap thong tin', async () => { /* ... */ });\n    await test.step('Bam Login', async () => { /* ... */ });\n  });\n  test.skip('chua lam xong', async () => {});  // tam bo qua\n});")}
+ <p>Chạy lọc theo tag: <code class="inl">npx playwright test --grep @smoke</code>. <code class="inl">test.step</code> giúp báo cáo hiện rõ từng bước.</p>
+ <h3>Cấu hình môi trường</h3>
+ ${codeBlock("// playwright.config.js\nuse: { baseURL: process.env.BASE_URL || 'https://www.saucedemo.com' }\n\n// trong test viet gon:\nawait page.goto('/');   // tu noi voi baseURL")}
+ ${codeBlock("// Doi moi truong (PowerShell tren Windows):\n$env:BASE_URL='https://staging...'; npx playwright test")}
+ <div class="callout new"><span class="t">🧰 Cần thêm cho dự án thật</span> retries & timeout trong config, chia test chạy song song (workers/sharding), tích hợp report (vd Allure), và quản lý <b>dữ liệu test</b> riêng theo môi trường.</div>`,
+ practice:`Mở <code class="inl">tests/day19-to-chuc-cau-hinh.spec.js</code>: thêm tag @regression và chạy lọc.`}),
+
+L({day:'Ngày 20',title:'Git căn bản cho Tester (bắt buộc ở dự án)',nav:'Ngày 20 · Git cơ bản',group:'Tuần 3 — Thực chiến',
+ body:`
+ <p>Mọi dự án thật dùng <b>Git</b> để quản lý code & làm việc nhóm. Không biết Git = không đẩy được test lên cho cả nhóm dùng. Đây là phần <b>tối thiểu</b> bạn cần.</p>
+ <h3>Vòng lặp hằng ngày</h3>
+ ${codeBlock("git clone <url-du-an>      // tai code ve lan dau\ngit checkout -b test/login // tao nhanh moi cho viec cua minh\n\n// ... viet test ...\n\ngit status                 // xem file da doi\ngit add .                  // chon file de luu\ngit commit -m \"them test dang nhap\"  // luu 1 moc\ngit push -u origin test/login        // day len server\n\ngit pull                   // keo code moi nhat ve")}
+ <h3>Khái niệm cần hiểu</h3>
+ <table class="mini">
+  <tr><th>Từ</th><th>Nghĩa</th></tr>
+  <tr><td><b>repository (repo)</b></td><td>Kho chứa code của dự án</td></tr>
+  <tr><td><b>branch (nhánh)</b></td><td>Bản sao để làm việc riêng, không ảnh hưởng nhánh chính</td></tr>
+  <tr><td><b>commit</b></td><td>Một "mốc lưu" có ghi chú</td></tr>
+  <tr><td><b>push / pull</b></td><td>Đẩy code lên / kéo code về</td></tr>
+  <tr><td><b>Pull Request (PR)</b></td><td>Đề nghị gộp nhánh của bạn vào nhánh chính, để team review</td></tr>
+ </table>
+ <div class="callout tip"><span class="t">💡 Thực tế</span> Quy trình thường là: tạo nhánh → viết test → commit → push → mở PR → đồng nghiệp review → merge. Cài <b>Git</b> tại git-scm.com; VS Code có sẵn giao diện Git để bấm thay vì gõ lệnh.</div>`,
+ tip:`Thêm file <code class="inl">.gitignore</code> để KHÔNG đẩy <code class="inl">node_modules/</code>, <code class="inl">playwright-report/</code>, <code class="inl">.auth/</code> lên repo.`}),
+
+/* ----- QUIZ TUAN 3 ----- */
+{type:'quiz',day:'Ôn tập',nav:'🧠 Quiz Tuần 3',group:'Tuần 3 — Thực chiến',title:'Quiz Tuần 3 — Thực chiến',
+ questions:[
+  {q:'Gặp lỗi "strict mode violation: resolved to 6 elements" nghĩa là gì?',
+   opts:['Playwright bị hỏng','Locator khớp nhiều element, cần thu hẹp cho còn đúng 1','Trang web bị lỗi'],correct:1,
+   ex:'Locator đang trỏ tới nhiều element. Dùng .first()/.nth(), .filter({hasText}) hoặc chaining để chọn đúng 1.'},
+  {q:'Vì sao nên tái dùng đăng nhập (fixture/storageState) thay vì login mỗi test?',
+   opts:['Để code ngắn hơn thôi','Vì login lại ở mọi test làm suite rất chậm; tái dùng giúp nhanh hơn nhiều','Vì Playwright cấm login nhiều lần'],correct:1,
+   ex:'Đăng nhập lại mỗi test rất tốn thời gian. storageState đăng nhập 1 lần rồi tái dùng — nhanh hơn hẳn ở suite lớn.'},
+  {q:'Để thao tác element BÊN TRONG một iframe, ta dùng?',
+   opts:['page.locator() như bình thường','page.frameLocator(...) rồi mới .locator() bên trong','page.goto() vào iframe'],correct:1,
+   ex:'Phải dùng frameLocator để "chui" vào iframe trước, rồi mới tìm element con bên trong.'},
+  {q:'page.route(...) với route.fulfill(...) dùng để làm gì?',
+   opts:['Đo tốc độ mạng','Trả về response GIẢ (mock) để test giao diện khi API lỗi/rỗng mà không cần backend thật','Tải trang nhanh hơn'],correct:1,
+   ex:'fulfill cho phép tự đặt status/body — dựng tình huống server 500, danh sách rỗng... để kiểm tra UI xử lý đúng.'},
+  {q:'Lệnh nào chỉ chạy các test được gắn tag @smoke?',
+   opts:['npx playwright test --grep @smoke','npx playwright test @smoke','npx playwright smoke'],correct:0,
+   ex:'--grep @smoke lọc theo tag trong tên test. Hữu ích để chạy nhanh nhóm test quan trọng.'},
+  {q:'Trong quy trình Git, "Pull Request (PR)" là gì?',
+   opts:['Kéo code mới nhất về máy','Đề nghị gộp nhánh của bạn vào nhánh chính để team review','Xóa một nhánh'],correct:1,
+   ex:'PR là đề nghị merge nhánh của bạn vào nhánh chính, để đồng nghiệp xem lại (review) trước khi gộp.'},
+ ]},
+
 /* ----- FLASHCARDS ----- */
 {type:'flashcards',day:'Ôn tập',nav:'🃏 Flashcards',group:'Ôn tập tổng',title:'Flashcards — Thuật ngữ & API hay dùng',
  cards:[
@@ -467,6 +571,14 @@ L({day:'Ngày 13–14',title:'Capstone — Test End-to-End một luồng mua hà
   {f:'Playwright Agents gồm?',b:'Planner (lập kế hoạch) · Generator (sinh test) · Healer (tự sửa test fail).'},
   {f:'Lỗi #1 của người mới?',b:'Quên await trước thao tác → test "chạy vượt" gây fail khó hiểu.'},
   {f:'Xem báo cáo sau khi chạy?',b:'<code>npx playwright show-report</code> — báo cáo HTML có ảnh & trace.'},
+  {f:'"strict mode violation" là gì?',b:'Locator khớp NHIỀU element. Thu hẹp bằng .first()/.nth(), .filter({hasText}) hoặc chaining.'},
+  {f:'Lọc đúng 1 dòng trong danh sách?',b:'<code>page.locator(\'.item\').filter({ hasText: \'Backpack\' })</code>'},
+  {f:'Tái dùng đăng nhập nhanh nhất?',b:'storageState — login 1 lần, lưu ra file, mọi test khởi động đã đăng nhập sẵn.'},
+  {f:'Thao tác trong iframe?',b:'<code>page.frameLocator(\'#id\').locator(\'...\')</code> — chui vào iframe trước.'},
+  {f:'Bắt tab/cửa sổ mới?',b:'<code>Promise.all([ context.waitForEvent(\'page\'), action() ])</code>'},
+  {f:'Mock API trả dữ liệu giả?',b:'<code>page.route(url, r => r.fulfill({ status, body }))</code> — test cả ca lỗi.'},
+  {f:'Chạy test theo nhãn @smoke?',b:'<code>npx playwright test --grep @smoke</code>'},
+  {f:'Pull Request (PR) là gì?',b:'Đề nghị gộp nhánh của bạn vào nhánh chính để team review trước khi merge.'},
  ]},
 
 /* ----- KET ----- */
@@ -531,7 +643,7 @@ function renderLesson(s){
 function renderCover(){
   return `<div class="cover">
     <div class="big">Học Playwright + JavaScript<br>cho Tester</div>
-    <p class="lead">Lộ trình 2 tuần cấp tốc · từ con số 0 đến vào dự án web thật · cập nhật 2026</p>
+    <p class="lead">Lộ trình 3 tuần · từ con số 0 đến thực chiến dự án web thật · cập nhật 2026</p>
     <div>
       <span class="pill">🇻🇳 Giải thích tiếng Việt</span>
       <span class="pill">💻 Code tiếng Anh</span>
@@ -539,10 +651,10 @@ function renderCover(){
       <span class="pill">🆕 Playwright 1.59</span>
     </div>
     <div class="stat">
-      <div class="box"><div class="num">14</div><div class="lbl">ngày học</div></div>
-      <div class="box"><div class="num">2</div><div class="lbl">bộ quiz</div></div>
-      <div class="box"><div class="num">16</div><div class="lbl">flashcard</div></div>
-      <div class="box"><div class="num">9+</div><div class="lbl">bài tập</div></div>
+      <div class="box"><div class="num">20</div><div class="lbl">ngày học</div></div>
+      <div class="box"><div class="num">3</div><div class="lbl">bộ quiz</div></div>
+      <div class="box"><div class="num">24</div><div class="lbl">flashcard</div></div>
+      <div class="box"><div class="num">14+</div><div class="lbl">bài tập</div></div>
     </div>
     <p style="margin-top:28px;color:var(--muted)">Bấm <b>Tiếp →</b> hoặc phím <b>→</b> để bắt đầu. Mở kèm thư mục <code class="inl">playwright-practice/</code> để code theo.</p>
   </div>`;

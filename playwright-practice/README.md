@@ -61,8 +61,16 @@ npx playwright codegen https://www.saucedemo.com
 | 10 | `tests/day10-login-data-driven.spec.js` | Data-driven |
 | 11 | `tests/day11-api-testing.spec.js` | API testing |
 | 13–14 | `tests/day13-capstone-e2e.spec.js` | Capstone E2E |
+| 15 | `tests/day15-strict-mode-filter.spec.js` | Strict mode & lọc locator |
+| 16 | `fixtures/auth.fixture.js` + `tests/day16-tai-dung-dang-nhap.spec.js` | Tái dùng đăng nhập |
+| 17 | `tests/day17-iframe-tab-file.spec.js` | iframe, tab, upload, dialog |
+| 18 | `tests/day18-network-mock.spec.js` | Mock/chặn network |
+| 19 | `tests/day19-to-chuc-cau-hinh.spec.js` | Tổ chức test & config |
 
 Lời giải nằm trong `js-basics/solutions/` và `tests/solutions/`.
+
+> **Tuần 3 (ngày 15–20)** là phần "thực chiến": các tình huống bạn chắc chắn gặp ở dự án thật.
+> Ngày 20 (Git căn bản) học trên slide, không có file bài tập riêng.
 
 ## 5. Web demo dùng để luyện tập
 

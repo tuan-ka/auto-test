@@ -39,6 +39,21 @@ Nguyên tắc: **làm trước, hiểu sau**. Mỗi ngày phải có code chạy
 | 12 | Mới 2026: Playwright Agents (Planner/Generator/Healer), MCP | (đọc slide ngày 12) |
 | 13–14 | Capstone: E2E mua hàng hoàn chỉnh | `tests/day13` |
 
+## TUẦN 3 — Thực chiến (lấp lỗ hổng để vào dự án thật)
+
+| Ngày | Mục tiêu | Thực hành |
+|------|----------|-----------|
+| 15 | **Strict mode** & lọc locator (`.filter`, `.nth`, `.first`, chaining), làm việc với danh sách/bảng | `tests/day15` |
+| 16 | **Tái dùng đăng nhập**: custom fixture + `storageState` | `fixtures/auth.fixture.js`, `tests/day16` |
+| 17 | **iframe, tab/popup mới, upload/download, dialog/alert** | `tests/day17` |
+| 18 | **Mock/chặn network** (`page.route`, `fulfill`, `abort`) + chờ dữ liệu động | `tests/day18` |
+| 19 | **Tổ chức test** (`describe`, `step`, tag, skip) + cấu hình môi trường (`baseURL`, `.env`) | `tests/day19` |
+| 20 | **Git căn bản** cho tester (branch, commit, push, Pull Request) | (đọc slide ngày 20) |
+
+> Tuần 3 là phần khác biệt giữa "viết được test mẫu" và "thực chiến dự án thật". Đây là các tình huống
+> bạn **chắc chắn gặp** ngay tuần đầu đi làm: strict mode violation, login chậm, iframe thanh toán,
+> popup, API lỗi, và Git để làm việc nhóm.
+
 ---
 
 ## CHEAT-SHEET — các lệnh hay dùng

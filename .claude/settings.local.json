@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const fs=require\\('fs'\\);const os=require\\('os'\\);const path=require\\('path'\\);const h=fs.readFileSync\\('playwright-lo-trinh.html','utf8'\\);const m=h.match\\(/<script>\\([\\\\s\\\\S]*\\)<\\\\/script>/\\);const p=path.join\\(os.tmpdir\\(\\),'_check2.js'\\);fs.writeFileSync\\(p,m[1]\\);console.log\\(p\\);\")",
+      "Bash(node --check \"C:\\\\Users\\\\admin\\\\AppData\\\\Local\\\\Temp\\\\_check2.js\")"
+    ]
+  }
+}
