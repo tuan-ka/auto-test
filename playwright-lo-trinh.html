@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Học Playwright + JS cho Tester — Lộ trình 2 tuần (2026)</title>
+<style>
+  :root{
+    --bg:#0f172a; --bg2:#1e293b; --panel:#1e293b; --border:#334155;
+    --txt:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --accent2:#22d3ee;
+    --green:#34d399; --red:#f87171; --amber:#fbbf24; --purple:#a78bfa;
+    --kw:#f472b6; --str:#86efac; --com:#64748b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;
+    background:var(--bg);color:var(--txt);line-height:1.65;
+    display:flex;height:100vh;overflow:hidden;
+  }
+  /* ---------- Sidebar ---------- */
+  #sidebar{
+    width:280px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);
+    overflow-y:auto;padding:18px 0;transition:margin-left .25s;
+  }
+  #sidebar h1{font-size:16px;padding:0 18px 4px;color:var(--accent)}
+  #sidebar .sub{font-size:12px;color:var(--muted);padding:0 18px 14px;border-bottom:1px solid var(--border);margin-bottom:8px}
+  .nav-item{
+    padding:8px 18px;font-size:13.5px;cursor:pointer;border-left:3px solid transparent;
+    display:flex;align-items:center;gap:8px;color:var(--muted);
+  }
+  .nav-item:hover{background:#243049;color:var(--txt)}
+  .nav-item.active{border-left-color:var(--accent);background:#243049;color:var(--txt);font-weight:600}
+  .nav-item .tag{font-size:10px;padding:1px 6px;border-radius:6px;background:#334155;color:var(--muted)}
+  .nav-item .tick{color:var(--green);font-weight:700;margin-left:auto}
+  .nav-group{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;padding:14px 18px 4px}
+  /* ---------- Main ---------- */
+  #main{flex:1;display:flex;flex-direction:column;min-width:0}
+  #topbar{
+    height:52px;flex-shrink:0;display:flex;align-items:center;gap:14px;
+    padding:0 22px;border-bottom:1px solid var(--border);background:var(--bg2)
+  }
+  #menuBtn{background:none;border:1px solid var(--border);color:var(--txt);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:15px}
+  #progressWrap{flex:1;height:8px;background:#0b1220;border-radius:99px;overflow:hidden}
+  #progressBar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+  #progressTxt{font-size:12px;color:var(--muted);min-width:54px;text-align:right}
+  /* ---------- Slide area ---------- */
+  #stage{flex:1;overflow-y:auto;padding:38px 48px 120px;scroll-behavior:smooth}
+  .slide{max-width:880px;margin:0 auto;animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .badge{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    padding:4px 12px;border-radius:99px;background:rgba(56,189,248,.15);color:var(--accent);margin-bottom:14px}
+  .slide h2{font-size:30px;line-height:1.25;margin-bottom:6px}
+  .slide .lead{color:var(--muted);font-size:16px;margin-bottom:22px}
+  .slide h3{font-size:18px;margin:24px 0 10px;color:var(--accent2)}
+  .slide p{margin-bottom:12px}
+  .slide ul,.slide ol{margin:0 0 14px 22px}
+  .slide li{margin-bottom:8px}
+  .slide b,.slide strong{color:#fff}
+  code.inl{background:#0b1220;border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-family:'Consolas',monospace;font-size:13.5px;color:var(--accent2)}
+  pre{background:#0b1220;border:1px solid var(--border);border-radius:10px;padding:16px 18px;overflow-x:auto;margin:6px 0 16px;font-size:13.5px;line-height:1.55}
+  pre code{font-family:'Consolas','Courier New',monospace;white-space:pre}
+  .c-kw{color:var(--kw)} .c-str{color:var(--str)} .c-com{color:var(--com);font-style:italic}
+  .callout{border-radius:10px;padding:14px 16px;margin:16px 0;border:1px solid;font-size:14.5px}
+  .callout.tip{background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.4)}
+  .callout.warn{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.4)}
+  .callout.new{background:rgba(167,139,250,.1);border-color:rgba(167,139,250,.45)}
+  .callout .t{font-weight:700;display:block;margin-bottom:4px}
+  .practice{background:rgba(56,189,248,.08);border:1px dashed var(--accent);border-radius:10px;padding:14px 16px;margin-top:20px;font-size:14.5px}
+  .practice .t{font-weight:700;color:var(--accent);display:block;margin-bottom:4px}
+  table.mini{width:100%;border-collapse:collapse;margin:10px 0 18px;font-size:14px}
+  table.mini th,table.mini td{border:1px solid var(--border);padding:8px 10px;text-align:left}
+  table.mini th{background:#0b1220;color:var(--accent2)}
+  /* ---------- Quiz ---------- */
+  .quiz-q{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:18px}
+  .quiz-q .qn{font-weight:700;margin-bottom:12px;font-size:16px}
+  .opt{display:block;width:100%;text-align:left;background:#0b1220;border:1px solid var(--border);color:var(--txt);
+    border-radius:8px;padding:11px 14px;margin-bottom:9px;cursor:pointer;font-size:14.5px;transition:.15s}
+  .opt:hover{border-color:var(--accent)}
+  .opt.correct{border-color:var(--green);background:rgba(52,211,153,.16)}
+  .opt.wrong{border-color:var(--red);background:rgba(248,113,113,.16)}
+  .opt:disabled{cursor:default}
+  .explain{display:none;margin-top:8px;font-size:14px;color:var(--muted);border-left:3px solid var(--accent);padding-left:12px}
+  .explain.show{display:block}
+  /* ---------- Flashcards ---------- */
+  .fc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-top:8px}
+  .fc{perspective:1000px;height:160px;cursor:pointer}
+  .fc-inner{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}
+  .fc.flip .fc-inner{transform:rotateY(180deg)}
+  .fc-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;padding:16px;display:flex;
+    align-items:center;justify-content:center;text-align:center;border:1px solid var(--border)}
+  .fc-front{background:var(--panel)}
+  .fc-front .q{font-weight:700;font-size:16px;color:var(--accent2)}
+  .fc-back{background:#0b1220;transform:rotateY(180deg);font-size:14px;flex-direction:column;gap:6px}
+  .fc-back code{color:var(--str);font-family:'Consolas',monospace;font-size:13px}
+  .fc-hint{font-size:11px;color:var(--muted);position:absolute;bottom:6px;right:10px}
+  /* ---------- Footer nav ---------- */
+  #footer{position:fixed;bottom:0;left:280px;right:0;height:64px;background:linear-gradient(180deg,transparent,var(--bg) 40%);
+    display:flex;align-items:center;justify-content:center;gap:14px;transition:left .25s}
+  .nbtn{background:var(--accent);color:#06222e;border:none;border-radius:9px;padding:10px 22px;font-size:14px;font-weight:700;cursor:pointer}
+  .nbtn.ghost{background:transparent;border:1px solid var(--border);color:var(--txt)}
+  .nbtn:disabled{opacity:.35;cursor:default}
+  .donebtn{background:transparent;border:1px solid var(--green);color:var(--green);border-radius:9px;padding:10px 16px;font-size:13px;cursor:pointer;font-weight:600}
+  .donebtn.done{background:var(--green);color:#06291d}
+  body.collapsed #sidebar{margin-left:-280px}
+  body.collapsed #footer{left:0}
+  @media(max-width:760px){
+    #sidebar{position:fixed;z-index:20;height:100%}
+    #footer{left:0}
+    #stage{padding:24px 18px 120px}
+    .slide h2{font-size:24px}
+  }
+  .cover{text-align:center;padding-top:40px}
+  .cover .big{font-size:42px;font-weight:800;line-height:1.15;margin-bottom:14px;
+    background:linear-gradient(90deg,var(--accent),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .cover .pill{display:inline-block;margin:6px;padding:8px 16px;border:1px solid var(--border);border-radius:99px;font-size:14px;color:var(--muted)}
+  .stat{display:flex;gap:18px;justify-content:center;margin-top:26px;flex-wrap:wrap}
+  .stat .box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 22px;min-width:120px}
+  .stat .num{font-size:26px;font-weight:800;color:var(--accent)}
+  .stat .lbl{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+  <aside id="sidebar">
+    <h1>🎭 Playwright cho Tester</h1>
+    <div class="sub">Lộ trình 2 tuần cấp tốc · 2026</div>
+    <div id="navList"></div>
+  </aside>
+
+  <div id="main">
+    <div id="topbar">
+      <button id="menuBtn" title="Ẩn/hiện menu">☰</button>
+      <div id="progressWrap"><div id="progressBar"></div></div>
+      <div id="progressTxt">0 / 0</div>
+    </div>
+    <div id="stage"><div class="slide" id="slide"></div></div>
+  </div>
+
+  <div id="footer">
+    <button class="nbtn ghost" id="prevBtn">← Trước</button>
+    <button class="donebtn" id="doneBtn">✔ Đánh dấu đã học</button>
+    <button class="nbtn" id="nextBtn">Tiếp →</button>
+  </div>
+
+<script>
+/* ============================================================
+   1) HIGHLIGHTER an toan (xu ly string/comment/keyword)
+   ============================================================ */
+function hl(code){
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const out=[];let i=0;const n=code.length;
+  const KW=/\b(const|let|var|async|await|function|return|import|from|export|default|for|of|in|if|else|new|class|constructor|this|true|false|null|undefined|try|catch|throw)\b/g;
+  while(i<n){
+    const c=code[i];
+    if(c==='/'&&code[i+1]==='/'){let j=code.indexOf('\n',i);if(j<0)j=n;
+      out.push('<span class="c-com">'+esc(code.slice(i,j))+'</span>');i=j;continue;}
+    if(c==='\''||c==='"'||c==='`'){const q=c;let j=i+1;
+      while(j<n&&code[j]!==q){if(code[j]==='\\')j++;j++;}j++;
+      out.push('<span class="c-str">'+esc(code.slice(i,Math.min(j,n)))+'</span>');i=Math.min(j,n);continue;}
+    let j=i;
+    while(j<n){const d=code[j];if(d==='/'&&code[j+1]==='/')break;if(d==='\''||d==='"'||d==='`')break;j++;}
+    out.push(esc(code.slice(i,j)).replace(KW,'<span class="c-kw">$1</span>'));i=j;
+  }
+  return out.join('');
+}
+const codeBlock=src=>'<pre><code>'+hl(src)+'</code></pre>';
+
+/* ============================================================
+   2) DU LIEU SLIDE
+   ============================================================ */
+function lesson(o){o.type='lesson';return o;}
+const L=lesson;
+
+const slides=[
+/* ----- COVER ----- */
+{type:'cover'},
+
+/* ----- HUONG DAN ----- */
+L({day:'Bắt đầu',title:'Cách dùng bộ tài liệu này',nav:'Hướng dẫn dùng',group:'Khởi động',
+ body:`
+ <p>Chào bạn! Bộ tài liệu này giúp một <b>manual tester chưa biết lập trình</b> học automation với
+ <b>Playwright + JavaScript</b> trong <b>2 tuần</b>, đủ để vào dự án web thật.</p>
+ <h3>3 phần đi cùng nhau</h3>
+ <ul>
+   <li><b>Slide này</b> — học lý thuyết từng ngày, làm quiz cuối tuần, ôn flashcard.</li>
+   <li><b>Thư mục <code class="inl">playwright-practice/</code></b> — bài tập chạy được, có lời giải.</li>
+   <li><b>File <code class="inl">playwright-lo-trinh.md</code></b> — bản đồ + cheat-sheet tra nhanh.</li>
+ </ul>
+ <h3>Nguyên tắc học</h3>
+ <ul>
+   <li>🛠️ <b>Làm trước, hiểu sau.</b> Mỗi ngày phải có code chạy được — đừng cố hiểu 100% lý thuyết rồi mới làm.</li>
+   <li>🔁 Gõ lại code bằng tay, đừng chỉ đọc. Sai → sửa → chạy lại, đó là cách nhanh nhất.</li>
+   <li>✅ Cuối mỗi slide bấm <b>"Đánh dấu đã học"</b> để theo dõi tiến độ (lưu trong trình duyệt).</li>
+ </ul>`,
+ tip:`Dùng phím <b>← →</b> để lật slide. Bấm ☰ để ẩn menu cho rộng màn hình.`}),
+
+/* ===================== TUAN 1 ===================== */
+L({day:'Ngày 1',title:'Cài môi trường + JavaScript căn bản',nav:'Ngày 1 · Cài đặt & Biến',group:'Tuần 1 — Nền tảng',
+ body:`
+ <h3>Cần cài gì (làm 1 lần)</h3>
+ <ol>
+   <li><b>Node.js</b> (bản LTS) — tại <code class="inl">nodejs.org</code>. Kiểm tra: mở terminal gõ <code class="inl">node -v</code>.</li>
+   <li><b>VS Code</b> — trình soạn code, cài thêm extension <i>Playwright Test for VSCode</i> (của Microsoft).</li>
+   <li><b>Tạo project Playwright</b>: trong thư mục dự án gõ:</li>
+ </ol>
+ ${codeBlock("npm init playwright@latest")}
+ <p>Lệnh này tự tạo cấu hình, ví dụ test mẫu và tải trình duyệt. (Project bài tập đã làm sẵn bước này cho bạn.)</p>
+
+ <h3>JavaScript — Biến & kiểu dữ liệu</h3>
+ <p><b>Biến</b> là cái "hộp" đặt tên để chứa dữ liệu. Dùng <code class="inl">const</code> (không đổi) hoặc <code class="inl">let</code> (đổi được).</p>
+ ${codeBlock("const tenDuAn = 'SauceDemo';   // hang so - khong gan lai\nlet soTest = 5;                // bien - co the gan lai\nsoTest = 6;\n\nconsole.log('Du an:', tenDuAn); // in ra man hinh")}
+ <p>Các <b>kiểu dữ liệu</b> hay gặp: <code class="inl">string</code> (chuỗi), <code class="inl">number</code> (số),
+ <code class="inl">boolean</code> (true/false), <code class="inl">null</code> (rỗng có chủ đích).</p>
+ ${codeBlock("const user = 'admin';   // string\nconst tuoi = 42;        // number\nconst hopLe = true;     // boolean")}`,
+ tip:`<b>Template string</b> dùng dấu backtick để chèn biến vào chuỗi: <code class="inl">\`Xin chao \${user}\`</code>. Rất hay dùng khi đặt tên test.`,
+ practice:`Chạy <code class="inl">node js-basics/day01-bien-kieu-du-lieu.js</code> rồi làm 3 phần <code class="inl">// TODO</code>.`}),
+
+L({day:'Ngày 2',title:'Điều kiện, vòng lặp, mảng & object',nav:'Ngày 2 · Mảng & Object',group:'Tuần 1 — Nền tảng',
+ body:`
+ <h3>if / else — rẽ nhánh</h3>
+ ${codeBlock("if (ketQua === 'pass') {   // dung === de SO SANH (3 dau bang)\n  console.log('Test PASS');\n} else {\n  console.log('Test FAIL');\n}")}
+ <div class="callout warn"><span class="t">⚠️ Nhớ kỹ</span> <code class="inl">=</code> là <b>gán</b>, còn <code class="inl">===</code> là <b>so sánh</b>. Người mới rất hay nhầm.</div>
+
+ <h3>Mảng (Array) — danh sách nhiều phần tử</h3>
+ ${codeBlock("const users = ['standard_user', 'locked_out_user'];\nconsole.log(users.length);  // 2  (so phan tu)\nconsole.log(users[0]);      // 'standard_user'  (dem tu 0)")}
+
+ <h3>Object — dữ liệu dạng "khóa: giá trị"</h3>
+ ${codeBlock("const taiKhoan = {\n  username: 'standard_user',\n  password: 'secret_sauce',\n  hopLe: true,\n};\nconsole.log(taiKhoan.password);  // 'secret_sauce'")}
+
+ <h3>Vòng lặp for...of — duyệt từng phần tử</h3>
+ ${codeBlock("for (const u of users) {\n  console.log('Se test voi user:', u);\n}")}`,
+ tip:`<b>Mảng các object</b> chính là cách lưu nhiều "test case" để chạy data-driven (bạn sẽ gặp ở Ngày 10).`,
+ practice:`Chạy <code class="inl">node js-basics/day02-mang-object-vonglap.js</code> và làm các <code class="inl">// TODO</code>.`}),
+
+L({day:'Ngày 3',title:'Hàm, arrow function & async/await',nav:'Ngày 3 · async/await ⭐',group:'Tuần 1 — Nền tảng',
+ body:`
+ <p>Đây là <b>ngày quan trọng nhất</b> về JS, vì mọi test Playwright đều là hàm <code class="inl">async</code> dùng <code class="inl">await</code>.</p>
+ <h3>Hàm & Arrow function</h3>
+ ${codeBlock("function cong(a, b) { return a + b; }   // ham thuong\nconst nhan = (a, b) => a * b;            // arrow function (viet ngan)")}
+ <p>Trong Playwright bạn luôn thấy: <code class="inl">test('...', async (&#123; page &#125;) => &#123; ... &#125;)</code> — chính là một arrow function <code class="inl">async</code>.</p>
+
+ <h3>async / await — chờ việc cần thời gian</h3>
+ <p>Mở trang, chờ mạng... là việc tốn thời gian. <code class="inl">await</code> nghĩa là <b>"đợi việc này xong rồi mới làm tiếp"</b>. Chỉ dùng được <code class="inl">await</code> bên trong hàm có <code class="inl">async</code>.</p>
+ ${codeBlock("async function chayTest() {\n  await page.goto('https://www.saucedemo.com'); // doi trang mo xong\n  await page.getByRole('button', { name: 'Login' }).click(); // doi bam xong\n}")}
+ <div class="callout warn"><span class="t">⚠️ Lỗi #1 của người mới</span> Quên <code class="inl">await</code> → test "chạy vượt" trước khi thao tác xong, gây fail khó hiểu. Hãy nhớ: <b>gần như mọi dòng Playwright đều bắt đầu bằng <code class="inl">await</code></b>.</div>
+
+ <h3>import / export — chia code ra nhiều file</h3>
+ ${codeBlock("import { test, expect } from '@playwright/test';")}`,
+ practice:`Chạy <code class="inl">node js-basics/day03-ham-async-await.js</code>, làm các <code class="inl">// TODO</code> về arrow function và async/await.`}),
+
+L({day:'Ngày 4',title:'HTML / CSS / DOM vừa đủ + DevTools',nav:'Ngày 4 · HTML & DevTools',group:'Tuần 1 — Nền tảng',
+ body:`
+ <p>Bạn không cần biết làm web, chỉ cần <b>đọc hiểu</b> trang để "chỉ điểm" element cho Playwright.</p>
+ <h3>DOM là gì?</h3>
+ <p>Trang web gồm các <b>thẻ HTML</b> lồng nhau (cây DOM). Mỗi nút (button, ô nhập, link...) là một <i>element</i>.</p>
+ ${codeBlock("<button type=\"submit\">Login</button>\n<input placeholder=\"Username\" data-testid=\"username\">\n<a href=\"/cart\">Gio hang</a>")}
+ <table class="mini">
+  <tr><th>Khái niệm</th><th>Ý nghĩa</th><th>Playwright dùng để</th></tr>
+  <tr><td><b>role</b></td><td>Vai trò: button, link, textbox, checkbox...</td><td><code class="inl">getByRole</code></td></tr>
+  <tr><td><b>text</b></td><td>Chữ hiển thị: "Login", "Gio hang"</td><td><code class="inl">getByText</code> / name</td></tr>
+  <tr><td><b>placeholder</b></td><td>Chữ mờ trong ô nhập</td><td><code class="inl">getByPlaceholder</code></td></tr>
+  <tr><td><b>data-testid</b></td><td>Nhãn riêng cho test (dev thêm vào)</td><td><code class="inl">getByTestId</code></td></tr>
+ </table>
+ <h3>DevTools — kính lúp của tester</h3>
+ <ul>
+   <li>Nhấn <b>F12</b> (hoặc chuột phải → Inspect) để mở DevTools.</li>
+   <li>Bấm icon mũi tên ↖ rồi rê chuột lên element → xem thẻ HTML, role, attribute của nó.</li>
+   <li>Từ đó quyết định dùng locator nào (ưu tiên role/testid).</li>
+ </ul>`,
+ tip:`Mẹo nhanh: dùng <code class="inl">npx playwright codegen &lt;url&gt;</code> — Playwright tự gợi ý locator tốt nhất khi bạn rê chuột. Bạn sẽ thử ở Ngày 5.`}),
+
+L({day:'Ngày 5',title:'Viết test Playwright đầu tiên + Codegen',nav:'Ngày 5 · Test đầu tiên',group:'Tuần 1 — Nền tảng',
+ body:`
+ <h3>Khung của một test</h3>
+ ${codeBlock("import { test, expect } from '@playwright/test';\n\ntest('mo trang va kiem tra tieu de', async ({ page }) => {\n  await page.goto('https://demo.playwright.dev/todomvc');\n  await expect(page).toHaveTitle(/todos/);\n});")}
+ <ul>
+   <li><code class="inl">test('mô tả', async (&#123; page &#125;) =&gt; ...)</code> — khai báo 1 test. <code class="inl">page</code> là 1 tab trình duyệt Playwright mở sẵn.</li>
+   <li><code class="inl">page.goto(...)</code> — mở URL.</li>
+   <li><code class="inl">expect(...).toHaveTitle(...)</code> — kiểm tra (assertion).</li>
+ </ul>
+
+ <h3>Chạy test</h3>
+ ${codeBlock("npx playwright test                 // chay tat ca\nnpx playwright test --ui            // che do UI - NEN DUNG khi hoc\nnpx playwright show-report          // xem bao cao")}
+ <div class="callout tip"><span class="t">💡 UI Mode</span> <code class="inl">--ui</code> mở 1 cửa sổ cho bạn bấm chạy từng test, tua đi tua lại từng bước, xem trình duyệt làm gì. Cực kỳ hợp người mới.</div>
+
+ <h3>Codegen — tự ghi thao tác thành code</h3>
+ ${codeBlock("npx playwright codegen https://www.saucedemo.com")}
+ <p>Một cửa sổ mở ra: bạn thao tác bằng tay (gõ, bấm), Playwright tự sinh code test tương ứng. Tuyệt vời để học cú pháp và locator.</p>`,
+ practice:`Mở <code class="inl">tests/day05-test-dau-tien.spec.js</code>, chạy bằng <code class="inl">--ui</code>, rồi làm bài thêm 2 công việc vào danh sách.`}),
+
+/* ----- QUIZ TUAN 1 ----- */
+{type:'quiz',day:'Ôn tập',nav:'🧠 Quiz Tuần 1',group:'Tuần 1 — Nền tảng',title:'Quiz Tuần 1 — JS & Test đầu tiên',
+ questions:[
+  {q:'Để so sánh hai giá trị trong JavaScript, ta dùng toán tử nào?',
+   opts:['=','==','==='],correct:2,
+   ex:'Dùng === (so sánh nghiêm ngặt). Một dấu = là phép gán, dễ gây nhầm.'},
+  {q:'Vì sao gần như mọi dòng lệnh Playwright đều bắt đầu bằng await?',
+   opts:['Để code trông chuyên nghiệp hơn','Vì các thao tác cần thời gian, await đợi chúng hoàn tất rồi mới chạy tiếp','Bắt buộc của JavaScript với mọi hàm'],correct:1,
+   ex:'await đợi việc bất đồng bộ (mở trang, click, chờ element) xong mới làm tiếp. Quên await là lỗi phổ biến nhất.'},
+  {q:'Trong test(\'...\', async ({ page }) => {...}), "page" là gì?',
+   opts:['Một file HTML','Một tab trình duyệt mà Playwright mở sẵn cho test','Tên của test'],correct:1,
+   ex:'page là đối tượng đại diện cho một tab/trang trình duyệt để bạn thao tác.'},
+  {q:'Lệnh nào mở chế độ UI trực quan, hợp người mới học?',
+   opts:['npx playwright test --ui','npx playwright open','npm run build'],correct:0,
+   ex:'--ui mở UI Mode: chạy từng test, tua lại từng bước, xem trình duyệt làm gì.'},
+  {q:'Công cụ nào tự GHI thao tác tay của bạn thành code test?',
+   opts:['Trace Viewer','Codegen (npx playwright codegen)','show-report'],correct:1,
+   ex:'Codegen ghi lại thao tác và sinh code + gợi ý locator tốt nhất.'},
+ ]},
+
+/* ===================== TUAN 2 ===================== */
+L({day:'Ngày 6',title:'Locators — cách "chỉ điểm" element (chuẩn 2026)',nav:'Ngày 6 · Locators',group:'Tuần 2 — Chuyên sâu',
+ body:`
+ <p><b>Locator</b> là cách Playwright tìm element trên trang. Chọn locator tốt = test ít gãy.</p>
+ <h3>Thứ tự ưu tiên (theo tài liệu chính thức)</h3>
+ <table class="mini">
+  <tr><th>#</th><th>Locator</th><th>Khi nào dùng</th></tr>
+  <tr><td>1</td><td><code class="inl">getByRole('button',{name:'Login'})</code></td><td>Tốt nhất — giống cách người dùng "nhìn" trang</td></tr>
+  <tr><td>2</td><td><code class="inl">getByLabel('Password')</code></td><td>Ô nhập trong form có nhãn</td></tr>
+  <tr><td>3</td><td><code class="inl">getByPlaceholder('Username')</code></td><td>Ô nhập có chữ mờ</td></tr>
+  <tr><td>4</td><td><code class="inl">getByText('Welcome')</code></td><td>Tìm theo chữ hiển thị</td></tr>
+  <tr><td>5</td><td><code class="inl">getByTestId('submit')</code></td><td>Khi dev gắn <code class="inl">data-testid</code></td></tr>
+ </table>
+ ${codeBlock("await page.getByRole('button', { name: 'Login' }).click();\nawait page.getByPlaceholder('Username').fill('standard_user');\nawait expect(page.getByText('Products')).toBeVisible();")}
+ <div class="callout warn"><span class="t">❌ Tránh</span> CSS/XPath cứng như <code class="inl">div.btn-primary &gt; span:nth-child(2)</code>. DOM đổi một chút là test gãy hàng loạt.</div>
+ <div class="callout new"><span class="t">🆕 Mới 2026</span> Selector engine <code class="inl">_react</code>/<code class="inl">_vue</code> và hậu tố <code class="inl">:light</code> đã bị <b>gỡ bỏ</b>. Có <code class="inl">locator.normalize()</code> giúp đổi selector CSS/XPath cũ sang locator dạng role/testid.</div>`,
+ tip:`Locator có sẵn <b>auto-waiting</b>: Playwright tự đợi element hiện ra & sẵn sàng trước khi thao tác — bạn không cần tự sleep.`,
+ practice:`Mở <code class="inl">tests/day06-locators.spec.js</code>, thử cả 4 kiểu locator trên SauceDemo bằng <code class="inl">--ui</code>.`}),
+
+L({day:'Ngày 7',title:'Actions + Web-first Assertions + Auto-waiting',nav:'Ngày 7 · Actions & Assert',group:'Tuần 2 — Chuyên sâu',
+ body:`
+ <h3>Actions — mô phỏng thao tác người dùng</h3>
+ <table class="mini">
+  <tr><th>Lệnh</th><th>Tác dụng</th></tr>
+  <tr><td><code class="inl">.click()</code></td><td>Bấm</td></tr>
+  <tr><td><code class="inl">.fill('text')</code></td><td>Điền ô nhập (xóa cũ, gõ mới) — nên dùng</td></tr>
+  <tr><td><code class="inl">.check()</code></td><td>Tick checkbox</td></tr>
+  <tr><td><code class="inl">.selectOption('VN')</code></td><td>Chọn trong dropdown</td></tr>
+  <tr><td><code class="inl">.press('Enter')</code></td><td>Nhấn phím</td></tr>
+ </table>
+
+ <h3>Web-first Assertions — luôn có <code class="inl">await expect</code></h3>
+ ${codeBlock("await expect(locator).toBeVisible();      // dang hien thi\nawait expect(locator).toHaveText('Products');\nawait expect(locator).toHaveValue('admin');\nawait expect(locator).toHaveCount(3);\nawait expect(page).toHaveURL(/inventory/);")}
+ <div class="callout tip"><span class="t">💡 Auto-waiting — điểm mạnh nhất</span> Web-first assertion <b>tự động chờ và thử lại</b> tới khi điều kiện đúng (trong thời gian timeout). Nhờ vậy bạn <b>không cần</b> <code class="inl">waitForTimeout</code> (sleep cứng) — thứ làm test chậm và chập chờn (flaky).</div>
+
+ <h3>Ví dụ trọn vẹn — đăng nhập</h3>
+ ${codeBlock("await page.goto('https://www.saucedemo.com');\nawait page.getByPlaceholder('Username').fill('standard_user');\nawait page.getByPlaceholder('Password').fill('secret_sauce');\nawait page.getByRole('button', { name: 'Login' }).click();\nawait expect(page).toHaveURL(/inventory/);")}`,
+ practice:`Mở <code class="inl">tests/day07-actions-assertions.spec.js</code>: viết test cho user bị khóa và thêm sản phẩm vào giỏ.`}),
+
+L({day:'Ngày 8',title:'Page Object Model (POM) + Hooks',nav:'Ngày 8 · Page Object Model',group:'Tuần 2 — Chuyên sâu',
+ body:`
+ <p>Khi dự án lớn, viết lặp lại locator ở mọi test rất khó bảo trì. <b>POM</b> gom mọi locator & thao tác của một trang vào một <code class="inl">class</code>.</p>
+ <h3>File Page Object</h3>
+ ${codeBlock("export class LoginPage {\n  constructor(page) {\n    this.page = page;\n    this.oUsername = page.getByPlaceholder('Username');\n    this.oPassword = page.getByPlaceholder('Password');\n    this.nutLogin  = page.getByRole('button', { name: 'Login' });\n  }\n  async moTrang() { await this.page.goto('https://www.saucedemo.com'); }\n  async dangNhap(u, p) {\n    await this.oUsername.fill(u);\n    await this.oPassword.fill(p);\n    await this.nutLogin.click();\n  }\n}")}
+ <h3>Test dùng POM — ngắn & dễ đọc</h3>
+ ${codeBlock("import { LoginPage } from '../pages/login.page.js';\n\ntest('dang nhap thanh cong', async ({ page }) => {\n  const loginPage = new LoginPage(page);\n  await loginPage.moTrang();\n  await loginPage.dangNhap('standard_user', 'secret_sauce');\n  await expect(page).toHaveURL(/inventory/);\n});")}
+ <div class="callout tip"><span class="t">🪝 Hooks</span> <code class="inl">test.beforeEach(...)</code> chạy <b>trước mỗi test</b> — thường để mở trang/đăng nhập sẵn, giúp mỗi test độc lập. Có cả <code class="inl">afterEach</code>.</div>`,
+ practice:`Mở <code class="inl">pages/login.page.js</code> và <code class="inl">tests/day08-page-object-model.spec.js</code>: thêm locator logo và hàm kiểm tra lỗi.`}),
+
+L({day:'Ngày 9',title:'Debug: Trace Viewer, UI Mode, ảnh/video',nav:'Ngày 9 · Debug & Trace',group:'Tuần 2 — Chuyên sâu',
+ body:`
+ <p>Test fail là chuyện thường. Quan trọng là biết <b>xem lại</b> chuyện gì đã xảy ra — đừng đoán mò.</p>
+ <h3>Trace Viewer — "hộp đen" của test</h3>
+ <p>Trace ghi lại từng bước: ảnh trước/sau mỗi action, DOM, network, console. Bật trong <code class="inl">playwright.config.js</code>:</p>
+ ${codeBlock("use: {\n  trace: 'on-first-retry',        // ghi trace khi test fail lan dau\n  screenshot: 'only-on-failure',  // chup anh khi fail\n}")}
+ ${codeBlock("npx playwright show-trace        // mo Trace Viewer\nnpx playwright test --debug      // chay tung buoc, dung lai de soi")}
+ <h3>Cách debug khi gặp fail</h3>
+ <ol>
+   <li>Chạy lại với <code class="inl">--ui</code> để xem trực quan từng bước.</li>
+   <li>Mở <b>Trace Viewer</b>, rê qua timeline để xem đúng bước nào hỏng.</li>
+   <li>Đọc thông báo lỗi: thường nói rõ locator nào không tìm thấy / assertion nào sai.</li>
+ </ol>
+ <div class="callout new"><span class="t">🆕 Mới 2026</span> HTML report có tab <b>Speedboard / Timeline</b> (từ 1.58) cho thấy chỗ nào tốn thời gian — dễ phát hiện chỗ chờ lâu hay bottleneck.</div>`,
+ tip:`Sau khi chạy, luôn dùng <code class="inl">npx playwright show-report</code> để xem báo cáo đẹp, có ảnh và trace cho test fail.`}),
+
+L({day:'Ngày 10',title:'Data-driven: chạy 1 kịch bản với nhiều bộ dữ liệu',nav:'Ngày 10 · Data-driven',group:'Tuần 2 — Chuyên sâu',
+ body:`
+ <p>Thay vì viết 4 test gần giống nhau, ta tạo một <b>mảng dữ liệu</b> rồi dùng vòng lặp sinh ra nhiều test tự động.</p>
+ ${codeBlock("const boDuLieu = [\n  { user: 'standard_user',   pass: 'secret_sauce', ketQua: 'thanhcong' },\n  { user: 'locked_out_user', pass: 'secret_sauce', ketQua: 'loi', loi: /locked out/ },\n  { user: '',                pass: 'secret_sauce', ketQua: 'loi', loi: /Username is required/ },\n];\n\nfor (const tc of boDuLieu) {\n  test(`Dang nhap [${tc.user}] -> ${tc.ketQua}`, async ({ page }) => {\n    const loginPage = new LoginPage(page);\n    await loginPage.moTrang();\n    await loginPage.dangNhap(tc.user, tc.pass);\n    if (tc.ketQua === 'thanhcong') {\n      await expect(page).toHaveURL(/inventory/);\n    } else {\n      await expect(loginPage.thongBaoLoi).toHaveText(tc.loi);\n    }\n  });\n}")}
+ <p>Mỗi phần tử trong mảng → một test riêng trong báo cáo. Thêm test case = thêm 1 dòng dữ liệu. Đây là kỹ thuật cực hữu ích cho tester (kiểm thử biên, nhiều tài khoản, nhiều input).</p>`,
+ practice:`Mở <code class="inl">tests/day10-login-data-driven.spec.js</code>: thêm case mật khẩu rỗng, chạy rồi xem báo cáo.`}),
+
+L({day:'Ngày 11',title:'API testing + CI/CD (GitHub Actions)',nav:'Ngày 11 · API & CI/CD',group:'Tuần 2 — Chuyên sâu',
+ body:`
+ <h3>API testing — không cần mở trình duyệt</h3>
+ <p>Playwright test được cả backend qua fixture <code class="inl">request</code>. Chạy rất nhanh.</p>
+ ${codeBlock("test('GET user', async ({ request }) => {\n  const res = await request.get('https://reqres.in/api/users/2');\n  expect(res.status()).toBe(200);\n  const body = await res.json();\n  expect(body.data.id).toBe(2);\n});")}
+ <h3>CI/CD — chạy test tự động khi push code</h3>
+ <p>Tạo file <code class="inl">.github/workflows/playwright.yml</code> để GitHub tự chạy test mỗi lần push:</p>
+ ${codeBlock("- name: Install\n  run: npm ci && npx playwright install --with-deps\n- name: Run tests\n  run: npx playwright test\n- uses: actions/upload-artifact@v4   // luu bao cao HTML\n  with: { name: report, path: playwright-report }")}
+ <div class="callout tip"><span class="t">💡 Ý nghĩa với tester</span> Test chạy tự động trên server mỗi khi dev đẩy code → bắt lỗi sớm, không cần bạn chạy tay mỗi lần.</div>`,
+ practice:`Mở <code class="inl">tests/day11-api-testing.spec.js</code>: viết test GET user cụ thể và case 404.`}),
+
+L({day:'Ngày 12',title:'Hệ sinh thái AI mới của Playwright (2026)',nav:'Ngày 12 · AI Agents 🆕',group:'Tuần 2 — Chuyên sâu',
+ body:`
+ <p>Điều khiến 2026 khác các năm trước: Playwright tích hợp AI để <b>lên kế hoạch, sinh và tự sửa</b> test.</p>
+ <div class="callout new"><span class="t">🤖 Playwright Agents (từ bản 1.56)</span>
+ <ul style="margin-top:8px">
+   <li><b>Planner</b> — khám phá ứng dụng, tạo <i>kế hoạch test</i> dạng Markdown.</li>
+   <li><b>Generator</b> — biến kế hoạch Markdown thành các file test Playwright.</li>
+   <li><b>Healer</b> — chạy test, tự <i>sửa</i> những test bị fail (vd locator đổi).</li>
+ </ul></div>
+ <h3>Những cập nhật đáng chú ý</h3>
+ <ul>
+   <li><b>Codegen tự sinh assertion</b> <code class="inl">toBeVisible()</code> cho thao tác phổ biến (bật trong settings Codegen).</li>
+   <li><b>Playwright MCP</b> — chuẩn cho phép agent AI điều khiển trình duyệt; nền tảng để "viết test bằng AI".</li>
+   <li><b>page.screencast</b> (quay video có chú thích), <b>npx playwright trace</b> (phân tích trace từ terminal).</li>
+ </ul>
+ <div class="callout warn"><span class="t">⚠️ Quan điểm đúng đắn</span> AI giúp <b>nhanh hơn</b>, nhưng bạn vẫn phải hiểu locator, assertion, POM để <b>đọc, kiểm và sửa</b> những gì AI sinh ra. Nền tảng Tuần 1–2 vẫn là bắt buộc.</div>`,
+ tip:`Bạn không cần thành thạo ngay phần AI này — chỉ cần biết nó tồn tại để không học theo tài liệu cũ và biết hướng nâng cao.`}),
+
+L({day:'Ngày 13–14',title:'Capstone — Test End-to-End một luồng mua hàng',nav:'Ngày 13–14 · Capstone 🏆',group:'Tuần 2 — Chuyên sâu',
+ body:`
+ <p>Bài tổng hợp: tự test một luồng thật từ đầu đến cuối, tổ chức theo POM. Đây là "sản phẩm bỏ túi" để bạn tự tin vào dự án.</p>
+ <h3>Kịch bản</h3>
+ <ol>
+   <li>Đăng nhập SauceDemo.</li>
+   <li>Thêm sản phẩm vào giỏ → kiểm tra số trên icon giỏ.</li>
+   <li>Vào giỏ → Checkout → điền thông tin.</li>
+   <li>Hoàn tất đơn → kiểm tra thông báo "Thank you for your order!".</li>
+ </ol>
+ ${codeBlock("await loginPage.dangNhap('standard_user', 'secret_sauce');\nawait page.getByRole('button', { name: 'Add to cart' }).first().click();\nawait expect(page.locator('.shopping_cart_badge')).toHaveText('1');\nawait page.locator('.shopping_cart_link').click();\nawait page.getByRole('button', { name: 'Checkout' }).click();\nawait page.getByPlaceholder('First Name').fill('Khai');\n// ... dien tiep, bam Continue -> Finish\nawait expect(page.getByText('Thank you for your order!')).toBeVisible();")}
+ <div class="practice"><span class="t">🏆 Đề thi của bạn (tự làm)</span>
+ A) Thêm 2 sản phẩm, kiểm tra badge = '2'. &nbsp; B) Tách bước checkout thành 1 Page Object riêng (CheckoutPage). &nbsp; C) Viết test đăng xuất (Logout) về lại trang login.<br>
+ Làm xong A–B–C là bạn đã <b>sẵn sàng vào dự án thật</b>. Chúc mừng! 🎉</div>`,
+ tip:`Sau capstone, hãy thử áp lên chính web của dự án bạn: bắt đầu từ luồng quan trọng nhất (đăng nhập / nghiệp vụ chính).`}),
+
+/* ----- QUIZ TUAN 2 ----- */
+{type:'quiz',day:'Ôn tập',nav:'🧠 Quiz Tuần 2',group:'Tuần 2 — Chuyên sâu',title:'Quiz Tuần 2 — Playwright chuyên sâu',
+ questions:[
+  {q:'Locator nào được khuyến nghị DÙNG ĐẦU TIÊN theo best practice 2026?',
+   opts:['page.locator(\'div.btn > span\') (CSS)','page.getByRole(\'button\', { name: \'Login\' })','page.locator(\'//button[1]\') (XPath)'],correct:1,
+   ex:'Ưu tiên getByRole vì giống cách người dùng nhìn trang và ít gãy khi DOM đổi. CSS/XPath cứng nên tránh.'},
+  {q:'Vì sao KHÔNG nên dùng page.waitForTimeout(3000)?',
+   opts:['Vì nó không chạy được trên Windows','Vì web-first assertion đã tự đợi (auto-wait); sleep cứng làm test chậm và chập chờn','Vì Playwright cấm hoàn toàn'],correct:1,
+   ex:'Auto-waiting tự chờ điều kiện đúng. Sleep cứng vừa chậm vừa flaky (lúc đủ lúc thiếu thời gian).'},
+  {q:'Page Object Model (POM) giải quyết vấn đề gì?',
+   opts:['Làm test chạy nhanh hơn','Gom locator & thao tác của một trang vào 1 nơi, dễ bảo trì khi UI đổi','Thay thế cho assertion'],correct:1,
+   ex:'POM tập trung locator/thao tác vào class. UI đổi chỉ sửa 1 chỗ, test đọc như tiếng người.'},
+  {q:'Khi một test fail, công cụ nào giúp xem lại từng bước (ảnh, DOM, network)?',
+   opts:['Trace Viewer','package.json','getByText'],correct:0,
+   ex:'Trace Viewer như "hộp đen" ghi lại mọi bước. Bật bằng trace trong config, mở bằng show-trace hoặc từ report.'},
+  {q:'Bộ ba Playwright Agents (2026) gồm những gì?',
+   opts:['Click, Fill, Assert','Planner, Generator, Healer','Chromium, Firefox, WebKit'],correct:1,
+   ex:'Planner lập kế hoạch (Markdown), Generator sinh file test, Healer tự sửa test fail.'},
+  {q:'Fixture nào để test API mà không cần mở trình duyệt?',
+   opts:['page','request','expect'],correct:1,
+   ex:'request cho phép gọi GET/POST... và kiểm tra status/JSON, chạy rất nhanh.'},
+ ]},
+
+/* ----- FLASHCARDS ----- */
+{type:'flashcards',day:'Ôn tập',nav:'🃏 Flashcards',group:'Ôn tập tổng',title:'Flashcards — Thuật ngữ & API hay dùng',
+ cards:[
+  {f:'await là gì?',b:'"Đợi việc bất đồng bộ xong rồi mới chạy tiếp". Gần như mọi dòng Playwright đều có await.'},
+  {f:'Locator tốt nhất nên dùng?',b:'getByRole — giống cách người dùng nhìn trang, ít gãy nhất.'},
+  {f:'Điền vào ô nhập?',b:'<code>await locator.fill(\'text\')</code> — xóa nội dung cũ rồi gõ mới.'},
+  {f:'Kiểm tra element đang hiển thị?',b:'<code>await expect(locator).toBeVisible()</code>'},
+  {f:'Kiểm tra URL hiện tại?',b:'<code>await expect(page).toHaveURL(/inventory/)</code>'},
+  {f:'Auto-waiting nghĩa là?',b:'Playwright tự đợi & thử lại tới khi element/điều kiện sẵn sàng — không cần sleep cứng.'},
+  {f:'beforeEach dùng làm gì?',b:'Hook chạy TRƯỚC mỗi test — thường để mở trang / đăng nhập sẵn, giúp test độc lập.'},
+  {f:'POM là gì?',b:'Page Object Model — gom locator & thao tác của 1 trang vào 1 class để dễ bảo trì.'},
+  {f:'Mở chế độ UI trực quan?',b:'<code>npx playwright test --ui</code>'},
+  {f:'Tự ghi thao tác thành code?',b:'<code>npx playwright codegen &lt;url&gt;</code> (Codegen)'},
+  {f:'Xem lại test fail từng bước?',b:'Trace Viewer — <code>npx playwright show-trace</code> hoặc mở từ HTML report.'},
+  {f:'Test API không cần trình duyệt?',b:'Dùng fixture <code>request</code>: <code>request.get(url)</code>, kiểm tra <code>res.status()</code>.'},
+  {f:'Nên TRÁNH locator kiểu nào?',b:'CSS/XPath cứng (vd div.btn > span:nth-child(2)) — DOM đổi là gãy.'},
+  {f:'Playwright Agents gồm?',b:'Planner (lập kế hoạch) · Generator (sinh test) · Healer (tự sửa test fail).'},
+  {f:'Lỗi #1 của người mới?',b:'Quên await trước thao tác → test "chạy vượt" gây fail khó hiểu.'},
+  {f:'Xem báo cáo sau khi chạy?',b:'<code>npx playwright show-report</code> — báo cáo HTML có ảnh & trace.'},
+ ]},
+
+/* ----- KET ----- */
+L({day:'Kết',title:'Sau 2 tuần — bước tiếp theo',nav:'🎓 Tổng kết & Next',group:'Ôn tập tổng',
+ body:`
+ <p>Hoàn thành lộ trình, bạn đã có thể: viết test với JS, dùng locator chuẩn, assertions, POM, data-driven, debug bằng Trace Viewer, và biết hệ sinh thái AI mới.</p>
+ <h3>Áp vào dự án thật — bắt đầu thế nào</h3>
+ <ol>
+   <li>Chọn <b>1 luồng quan trọng nhất</b> (đăng nhập / nghiệp vụ chính) viết test trước.</li>
+   <li>Xin dev gắn <code class="inl">data-testid</code> cho các element hay đổi → locator bền hơn.</li>
+   <li>Tổ chức theo POM ngay từ đầu, đặt tên test bằng "tiếng người".</li>
+   <li>Đưa test lên CI (GitHub Actions) để chạy tự động.</li>
+ </ol>
+ <h3>Học tiếp (tài liệu mới 2026)</h3>
+ <ul>
+   <li>Trang chủ & docs: <b>playwright.dev</b> (Best Practices, Locators, Trace Viewer).</li>
+   <li>Release notes để cập nhật tính năng mới: <b>playwright.dev/docs/release-notes</b>.</li>
+   <li>Thực hành thêm trên: saucedemo.com, practice.expandtesting.com, reqres.in.</li>
+ </ul>
+ <div class="callout tip"><span class="t">🎉 Chúc mừng!</span> Bạn đã đi từ manual sang automation. Cứ viết test mỗi ngày cho web thật — kỹ năng sẽ chắc rất nhanh.</div>`,
+ tip:`Mở lại file <code class="inl">playwright-lo-trinh.md</code> bất cứ lúc nào để tra cheat-sheet cú pháp.`}),
+];
+
+/* ============================================================
+   3) RENDER
+   ============================================================ */
+const stage=document.getElementById('stage');
+const slideEl=document.getElementById('slide');
+const navList=document.getElementById('navList');
+let cur=0;
+const STORE_KEY='pw_progress_v1';
+let done=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');
+
+function renderNav(){
+  navList.innerHTML='';
+  let lastGroup=null;
+  slides.forEach((s,idx)=>{
+    if(s.type==='cover')return;
+    if(s.group&&s.group!==lastGroup){
+      const g=document.createElement('div');g.className='nav-group';g.textContent=s.group;
+      navList.appendChild(g);lastGroup=s.group;
+    }
+    const it=document.createElement('div');
+    it.className='nav-item'+(idx===cur?' active':'');
+    const label=s.nav||s.title||('Slide '+idx);
+    it.innerHTML='<span>'+label+'</span>'+(done[idx]?'<span class="tick">✔</span>':'');
+    it.onclick=()=>go(idx);
+    navList.appendChild(it);
+  });
+}
+
+function renderLesson(s){
+  let h='<div class="badge">'+(s.day||'')+'</div>';
+  h+='<h2>'+s.title+'</h2>';
+  if(s.lead)h+='<div class="lead">'+s.lead+'</div>';
+  h+=s.body;
+  if(s.tip)h+='<div class="callout tip"><span class="t">💡 Mẹo</span>'+s.tip+'</div>';
+  if(s.practice)h+='<div class="practice"><span class="t">🧪 Thực hành</span>'+s.practice+'</div>';
+  return h;
+}
+
+function renderCover(){
+  return `<div class="cover">
+    <div class="big">Học Playwright + JavaScript<br>cho Tester</div>
+    <p class="lead">Lộ trình 2 tuần cấp tốc · từ con số 0 đến vào dự án web thật · cập nhật 2026</p>
+    <div>
+      <span class="pill">🇻🇳 Giải thích tiếng Việt</span>
+      <span class="pill">💻 Code tiếng Anh</span>
+      <span class="pill">🧪 Bài tập có lời giải</span>
+      <span class="pill">🆕 Playwright 1.59</span>
+    </div>
+    <div class="stat">
+      <div class="box"><div class="num">14</div><div class="lbl">ngày học</div></div>
+      <div class="box"><div class="num">2</div><div class="lbl">bộ quiz</div></div>
+      <div class="box"><div class="num">16</div><div class="lbl">flashcard</div></div>
+      <div class="box"><div class="num">9+</div><div class="lbl">bài tập</div></div>
+    </div>
+    <p style="margin-top:28px;color:var(--muted)">Bấm <b>Tiếp →</b> hoặc phím <b>→</b> để bắt đầu. Mở kèm thư mục <code class="inl">playwright-practice/</code> để code theo.</p>
+  </div>`;
+}
+
+function renderQuiz(s){
+  let h='<div class="badge">'+s.day+'</div><h2>'+s.title+'</h2>';
+  h+='<div class="lead">Bấm chọn đáp án — hệ thống hiện đúng/sai và giải thích ngay.</div>';
+  s.questions.forEach((q,qi)=>{
+    h+='<div class="quiz-q"><div class="qn">'+(qi+1)+'. '+q.q+'</div>';
+    q.opts.forEach((o,oi)=>{
+      h+='<button class="opt" data-q="'+qi+'" data-o="'+oi+'">'+o+'</button>';
+    });
+    h+='<div class="explain" id="ex-'+qi+'">'+q.ex+'</div></div>';
+  });
+  return h;
+}
+function bindQuiz(s){
+  slideEl.querySelectorAll('.opt').forEach(btn=>{
+    btn.onclick=()=>{
+      const qi=+btn.dataset.q, oi=+btn.dataset.o;
+      const q=s.questions[qi];
+      const opts=slideEl.querySelectorAll('.opt[data-q="'+qi+'"]');
+      opts.forEach((b,i)=>{b.disabled=true;
+        if(i===q.correct)b.classList.add('correct');
+        if(i===oi&&oi!==q.correct)b.classList.add('wrong');
+      });
+      document.getElementById('ex-'+qi).classList.add('show');
+    };
+  });
+}
+
+function renderFlash(s){
+  let h='<div class="badge">'+s.day+'</div><h2>'+s.title+'</h2>';
+  h+='<div class="lead">Bấm vào thẻ để lật xem đáp án. Tự hỏi trước khi lật!</div><div class="fc-grid">';
+  s.cards.forEach((c,i)=>{
+    h+=`<div class="fc" data-i="${i}"><div class="fc-inner">
+      <div class="fc-face fc-front"><div class="q">${c.f}</div><span class="fc-hint">bấm để lật</span></div>
+      <div class="fc-face fc-back"><div>${c.b}</div></div>
+    </div></div>`;
+  });
+  h+='</div>';
+  return h;
+}
+function bindFlash(){
+  slideEl.querySelectorAll('.fc').forEach(card=>{
+    card.onclick=()=>card.classList.toggle('flip');
+  });
+}
+
+function render(){
+  const s=slides[cur];
+  let html='';
+  if(s.type==='cover')html=renderCover();
+  else if(s.type==='quiz')html=renderQuiz(s);
+  else if(s.type==='flashcards')html=renderFlash(s);
+  else html=renderLesson(s);
+  slideEl.innerHTML=html;
+  slideEl.style.animation='none';void slideEl.offsetWidth;slideEl.style.animation='';
+  if(s.type==='quiz')bindQuiz(s);
+  if(s.type==='flashcards')bindFlash();
+  stage.scrollTop=0;
+  // progress
+  const total=slides.length-1; // tru cover
+  const pct=Math.round((Object.keys(done).length/total)*100);
+  document.getElementById('progressBar').style.width=pct+'%';
+  document.getElementById('progressTxt').textContent=Object.keys(done).length+' / '+total;
+  // nav buttons
+  document.getElementById('prevBtn').disabled=cur===0;
+  document.getElementById('nextBtn').disabled=cur===slides.length-1;
+  const db=document.getElementById('doneBtn');
+  if(s.type==='cover'){db.style.display='none';}
+  else{db.style.display='';
+    if(done[cur]){db.classList.add('done');db.textContent='✔ Đã học';}
+    else{db.classList.remove('done');db.textContent='✔ Đánh dấu đã học';}
+  }
+  renderNav();
+}
+
+function go(i){if(i<0||i>=slides.length)return;cur=i;render();}
+function next(){go(cur+1);}
+function prev(){go(cur-1);}
+
+document.getElementById('nextBtn').onclick=next;
+document.getElementById('prevBtn').onclick=prev;
+document.getElementById('doneBtn').onclick=()=>{
+  if(slides[cur].type==='cover')return;
+  if(done[cur])delete done[cur];else done[cur]=1;
+  localStorage.setItem(STORE_KEY,JSON.stringify(done));
+  render();
+};
+document.getElementById('menuBtn').onclick=()=>document.body.classList.toggle('collapsed');
+
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.key==='ArrowRight')next();
+  if(e.key==='ArrowLeft')prev();
+});
+
+render();
+</script>
+</body>
+</html>

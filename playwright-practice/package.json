@@ -1,0 +1,18 @@
+{
+  "name": "playwright-practice",
+  "version": "1.0.0",
+  "description": "Bo bai tap hoc Playwright tu A->Z cho tester (lo trinh 2 tuan)",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report",
+    "codegen": "playwright codegen https://www.saucedemo.com",
+    "js": "node"
+  },
+  "keywords": ["playwright", "testing", "qa", "automation"],
+  "devDependencies": {
+    "@playwright/test": "^1.59.0"
+  }
+}
