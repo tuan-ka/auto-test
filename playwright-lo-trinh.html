@@ -21,7 +21,7 @@
   /* ---------- Sidebar ---------- */
   #sidebar{
     width:280px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);
-    overflow-y:auto;padding:18px 0;transition:margin-left .25s;
+    overflow-y:auto;padding:18px 0;transition:margin-left .25s, transform .25s;
   }
   #sidebar h1{font-size:16px;padding:0 18px 4px;color:var(--accent)}
   #sidebar .sub{font-size:12px;color:var(--muted);padding:0 18px 14px;border-bottom:1px solid var(--border);margin-bottom:8px}
@@ -104,11 +104,55 @@
   .donebtn.done{background:var(--green);color:#06291d}
   body.collapsed #sidebar{margin-left:-280px}
   body.collapsed #footer{left:0}
+  /* ---------- Overlay (mobile drawer + cheat sheet) ---------- */
+  #overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .25s;z-index:30}
+  body.nav-open #overlay,body.cheat-open #overlay{opacity:1;pointer-events:auto}
+  /* ---------- Cheat Sheet: button + panel ---------- */
+  #cheatBtn{background:rgba(167,139,250,.15);border:1px solid var(--purple);color:#c4b5fd;border-radius:8px;
+    padding:6px 12px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:6px}
+  #cheatBtn:hover{background:rgba(167,139,250,.28)}
+  body.cheat-open #cheatBtn{background:var(--purple);color:#1e1b4b;border-color:var(--purple)}
+  #cheatPanel{position:fixed;top:0;right:0;height:100%;width:460px;max-width:93vw;background:var(--bg2);
+    border-left:1px solid var(--border);z-index:45;transform:translateX(101%);transition:transform .28s;display:flex;flex-direction:column}
+  body.cheat-open #cheatPanel{transform:none}
+  #cheatHead{flex-shrink:0;min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:0 16px;border-bottom:1px solid var(--border);font-weight:700;color:var(--purple);font-size:14px}
+  #cheatBody{flex:1;overflow-y:auto;padding:16px 16px 50px}
+  #cheatBody pre{font-size:12.5px;padding:11px 13px;margin:4px 0 12px}
+  .cs-sec{margin-bottom:16px}
+  .cs-t{font-size:14px;font-weight:700;color:var(--accent2);margin-bottom:6px}
+  .cs-note{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  #cheatClose,#sideClose{background:none;border:1px solid var(--border);color:var(--txt);border-radius:7px;
+    width:32px;height:32px;cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  #sideClose{display:none;position:absolute;top:14px;right:14px}
+  /* ---------- Mobile ---------- */
   @media(max-width:760px){
-    #sidebar{position:fixed;z-index:20;height:100%}
-    #footer{left:0}
-    #stage{padding:24px 18px 120px}
-    .slide h2{font-size:24px}
+    #sidebar{position:fixed;left:0;top:0;z-index:40;height:100%;margin-left:0!important;transform:translateX(-100%);box-shadow:4px 0 26px rgba(0,0,0,.45)}
+    body.nav-open #sidebar{transform:translateX(0)}
+    #sideClose{display:flex}
+    #footer{left:0;gap:8px}
+    #stage{padding:22px 15px 100px}
+    .slide h2{font-size:22px}
+    .slide h3{font-size:16px}
+    #topbar{padding:0 12px;gap:8px}
+    #progressTxt{display:none}
+    #cheatBtn{padding:7px 10px}
+    #cheatBtn .lbl{display:none}
+    .nbtn{padding:9px 14px;font-size:13px}
+    .donebtn{padding:9px 11px;font-size:12px}
+    .fc-grid{grid-template-columns:1fr 1fr}
+    pre{font-size:12.5px}
+    table.mini{font-size:12.5px}
+    .cover .big{font-size:32px}
+  }
+  @media(max-width:440px){
+    .fc-grid{grid-template-columns:1fr}
+    .cover .big{font-size:26px}
+    .stat{gap:10px}
+    .stat .box{padding:12px 14px;min-width:42%}
+    .nbtn{padding:8px 11px;font-size:12.5px}
+    .donebtn{font-size:0;padding:9px 12px}
+    .donebtn::before{content:'✔';font-size:15px;font-weight:700}
   }
   .cover{text-align:center;padding-top:40px}
   .cover .big{font-size:42px;font-weight:800;line-height:1.15;margin-bottom:14px;
@@ -122,9 +166,17 @@
 </head>
 <body>
   <aside id="sidebar">
+    <button id="sideClose" title="Đóng menu">✕</button>
     <h1>🎭 Playwright cho Tester</h1>
     <div class="sub">Lộ trình 3 tuần · Cơ bản → Thực chiến · 2026</div>
     <div id="navList"></div>
+  </aside>
+
+  <div id="overlay"></div>
+
+  <aside id="cheatPanel">
+    <div id="cheatHead"><span>📋 Cheat Sheet — tra cứu nhanh</span><button id="cheatClose" title="Đóng">✕</button></div>
+    <div id="cheatBody"></div>
   </aside>
 
   <div id="main">
@@ -132,6 +184,7 @@
       <button id="menuBtn" title="Ẩn/hiện menu">☰</button>
       <div id="progressWrap"><div id="progressBar"></div></div>
       <div id="progressTxt">0 / 0</div>
+      <button id="cheatBtn" title="Mở/đóng Cheat Sheet">📋 <span class="lbl">Cheat Sheet</span></button>
     </div>
     <div id="stage"><div class="slide" id="slide"></div></div>
   </div>
@@ -705,6 +758,41 @@ function bindFlash(){
   });
 }
 
+/* ============================================================
+   3b) CHEAT SHEET (tra cuu nhanh - bat/tat)
+   ============================================================ */
+const cheatData=[
+ {t:'⌨️ Dòng lệnh (CLI)',code:"npx playwright test                 // chay tat ca\nnpx playwright test --ui            // UI mode (nen dung khi hoc)\nnpx playwright test file.spec.js    // chay 1 file\nnpx playwright test --headed        // mo trinh duyet that\nnpx playwright test --debug         // debug tung buoc\nnpx playwright test --grep @smoke   // loc theo tag\nnpx playwright show-report          // xem bao cao HTML\nnpx playwright codegen <url>        // tu ghi thao tac -> code\nnpx playwright show-trace           // mo Trace Viewer"},
+ {t:'🧱 Khung 1 test',code:"import { test, expect } from '@playwright/test';\n\ntest('mo ta bang tieng nguoi', async ({ page }) => {\n  await page.goto('https://example.com');\n  await expect(page).toHaveTitle(/Example/);\n});"},
+ {t:'🎯 Locators',note:'Thứ tự ưu tiên từ trên xuống. Tránh CSS/XPath cứng.',code:"page.getByRole('button', { name: 'Login' })  // 1. tot nhat\npage.getByLabel('Password')                   // 2. form\npage.getByPlaceholder('Username')             // 3.\npage.getByText('Welcome')                     // 4.\npage.getByTestId('submit')                    // 5.\n\n// Thu hep khi khop nhieu element:\n.first()   .last()   .nth(0)\n.filter({ hasText: 'Backpack' })"},
+ {t:'🖱️ Actions (thao tác)',code:"await loc.click();\nawait loc.fill('text');        // dien o nhap\nawait loc.check();             // tick checkbox\nawait loc.selectOption('VN');  // dropdown\nawait loc.press('Enter');\nawait loc.hover();\nawait loc.setInputFiles('file.png'); // upload"},
+ {t:'✅ Assertions (luôn có await)',code:"await expect(loc).toBeVisible();\nawait expect(loc).toBeEnabled();\nawait expect(loc).toHaveText('Products');\nawait expect(loc).toHaveValue('admin');\nawait expect(loc).toHaveCount(3);\nawait expect(page).toHaveURL(/inventory/);\nawait expect(page).toHaveTitle(/todos/);"},
+ {t:'🗂️ Tổ chức (describe / step / hook)',code:"test.describe('Nhom test', () => {\n  test.beforeEach(async ({ page }) => { /* truoc moi test */ });\n  test('ten @smoke', async ({ page }) => {\n    await test.step('buoc 1', async () => { /* ... */ });\n  });\n  test.skip('tam bo qua', async () => {});\n});"},
+ {t:'⏳ Chờ & Network (mock)',note:'KHÔNG dùng page.waitForTimeout (sleep cứng).',code:"await page.waitForLoadState('networkidle');\nawait page.waitForResponse(r => r.url().includes('/api'));\n\n// Mock tra du lieu gia / chan request:\nawait page.route('**/api/x', r => r.fulfill({ status:200, body:'{}' }));\nawait page.route('**/*.png', r => r.abort());"},
+ {t:'🌐 API testing',code:"test('api', async ({ request }) => {\n  const res = await request.get('https://reqres.in/api/users/2');\n  expect(res.status()).toBe(200);\n  const body = await res.json();\n  expect(body.data.id).toBe(2);\n});"},
+ {t:'🪟 iframe · tab mới · dialog',code:"// iframe - chui vao truoc:\npage.frameLocator('#id').locator('#el')\n\n// tab/cua so moi:\nconst [tab] = await Promise.all([\n  context.waitForEvent('page'),\n  page.getByText('Open').click(),\n]);\n\n// hop thoai (alert/confirm):\npage.on('dialog', d => d.accept());"},
+ {t:'🔐 Tái dùng đăng nhập',code:"// Luu trang thai 1 lan:\nawait page.context().storageState({ path: 'playwright/.auth/user.json' });\n// Trong playwright.config.js:\nuse: { storageState: 'playwright/.auth/user.json' }"},
+ {t:'🌿 Git căn bản',code:"git checkout -b test/login   // tao nhanh moi\ngit add .\ngit commit -m \"them test dang nhap\"\ngit push -u origin test/login\ngit pull                     // keo code moi ve\n// roi mo Pull Request de team review"},
+ {t:'⭐ Quy tắc vàng',html:"<ul style='margin:0 0 0 18px;font-size:13px;line-height:1.75'>"+
+   "<li>✅ Ưu tiên <b>getByRole / getByTestId</b>.</li>"+
+   "<li>✅ Luôn <b>await expect(...)</b> → tự đợi (auto-wait).</li>"+
+   "<li>❌ Tránh <b>waitForTimeout</b> (sleep cứng) → flaky.</li>"+
+   "<li>❌ Tránh CSS/XPath cứng phụ thuộc DOM.</li>"+
+   "<li>✅ Mỗi test độc lập (beforeEach reset).</li>"+
+   "<li>✅ Fail → mở <b>Trace Viewer</b>, đừng đoán mò.</li></ul>"},
+];
+function renderCheat(){
+  let h='';
+  cheatData.forEach(sec=>{
+    h+='<div class="cs-sec"><div class="cs-t">'+sec.t+'</div>';
+    if(sec.note)h+='<div class="cs-note">'+sec.note+'</div>';
+    if(sec.code)h+=codeBlock(sec.code);
+    if(sec.html)h+=sec.html;
+    h+='</div>';
+  });
+  document.getElementById('cheatBody').innerHTML=h;
+}
+
 function render(){
   const s=slides[cur];
   let html='';
@@ -734,7 +822,7 @@ function render(){
   renderNav();
 }
 
-function go(i){if(i<0||i>=slides.length)return;cur=i;render();}
+function go(i){if(i<0||i>=slides.length)return;cur=i;render();if(isMobile())document.body.classList.remove('nav-open');}
 function next(){go(cur+1);}
 function prev(){go(cur-1);}
 
@@ -746,14 +834,33 @@ document.getElementById('doneBtn').onclick=()=>{
   localStorage.setItem(STORE_KEY,JSON.stringify(done));
   render();
 };
-document.getElementById('menuBtn').onclick=()=>document.body.classList.toggle('collapsed');
+/* ---------- Dong/mo Sidebar, Cheat Sheet, Overlay ---------- */
+const body=document.body;
+function isMobile(){return window.matchMedia('(max-width:760px)').matches;}
+function closeOverlays(){body.classList.remove('nav-open','cheat-open');}
+
+document.getElementById('menuBtn').onclick=()=>{
+  body.classList.remove('cheat-open');
+  if(isMobile())body.classList.toggle('nav-open');
+  else body.classList.toggle('collapsed');
+};
+document.getElementById('sideClose').onclick=()=>body.classList.remove('nav-open');
+document.getElementById('cheatBtn').onclick=()=>{
+  body.classList.remove('nav-open');
+  body.classList.toggle('cheat-open');
+};
+document.getElementById('cheatClose').onclick=()=>body.classList.remove('cheat-open');
+document.getElementById('overlay').onclick=closeOverlays;
 
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.key==='Escape'){closeOverlays();return;}
+  if(body.classList.contains('cheat-open'))return; // dang doc cheat thi khong lat slide
   if(e.key==='ArrowRight')next();
   if(e.key==='ArrowLeft')prev();
 });
 
+renderCheat();
 render();
 </script>
 </body>
